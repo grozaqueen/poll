@@ -1,11 +1,11 @@
-package main
+package poll
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-func getResults(w http.ResponseWriter, r *http.Request) {
+func (pd *PollDelivery) GetResults(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		return
@@ -17,20 +17,14 @@ func getResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pollsMu.RLock()
-	poll, exists := polls[pollID]
-	pollsMu.RUnlock()
-
-	if !exists {
-		http.Error(w, "Опрос не найден", http.StatusNotFound)
+	poll, err := pd.PollRepository.GetResults(pollID)
+	if err != nil {
+		err, statusCode := pd.errResolver.Get(err)
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 
-	response := struct {
-		Question string         `json:"question"`
-		Options  []string       `json:"options"`
-		Votes    map[string]int `json:"votes"`
-	}{
+	response := ResultsPollResponse{
 		Question: poll.Question,
 		Options:  poll.Options,
 		Votes:    poll.Votes,

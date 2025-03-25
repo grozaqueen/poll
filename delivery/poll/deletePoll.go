@@ -1,22 +1,11 @@
-package main
+package poll
 
 import (
 	"encoding/json"
 	"net/http"
 )
 
-type DeletePollRequest struct {
-	PollID string `json:"poll_id"`
-	UserID string `json:"user_id"`
-}
-
-type DeletePollResponse struct {
-	Status    string `json:"status"`
-	PollID    string `json:"poll_id"`
-	DeletedBy string `json:"deleted_by"`
-}
-
-func deletePollHandler(w http.ResponseWriter, r *http.Request) {
+func (pd *PollDelivery) DeletePoll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
 		return
@@ -28,22 +17,12 @@ func deletePollHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pollsMu.Lock()
-	defer pollsMu.Unlock()
-
-	poll, exists := polls[req.PollID]
-	if !exists {
-		http.Error(w, "Опрос не найден", http.StatusNotFound)
+	err := pd.PollRepository.DeletePoll(req.PollID, req.UserID)
+	if err != nil {
+		err, statusCode := pd.errResolver.Get(err)
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
-
-	if poll.Creator.ID != req.UserID {
-		http.Error(w, "Только создатель может удалить опрос", http.StatusForbidden)
-		return
-	}
-
-	delete(polls, req.PollID)
-
 	response := DeletePollResponse{
 		Status: "Опрос успешно удален",
 		PollID: req.PollID,
