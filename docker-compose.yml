@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  main_go:
+    build:
+      context: .
+      dockerfile: ./cmd/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - TARANTOOL_ADDRESS=${DB_ADDRESS}
+      - TARANTOOL_USER_NAME=${DB_USERNAME}
+      - TARANTOOL_USER_PASSWORD=${DB_PASSWORD}
+    image: main-go-image
+    container_name: main_go
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - tarantool_db
+
+  tarantool_db:
+    image: tarantool/tarantool:2.10
+    hostname: tarantool_db
+    ports:
+      - "3301:3301"
+    environment:
+      - TARANTOOL_USER_NAME=${DB_USERNAME}
+      - TARANTOOL_USER_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./tarantool/init.lua:/opt/tarantool/init.lua
+      - tarantool_data:/var/lib/tarantool
+    command: tarantool /opt/tarantool/init.lua
+    container_name: tarantool_db
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  tarantool_data:
+
+networks:
+  app-network:
+    driver: bridge
