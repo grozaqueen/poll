@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
 )
 
 func ConvertToStringSlice(val interface{}) []string {
@@ -94,7 +95,11 @@ func InterfaceToUint64(val interface{}) uint64 {
 	}
 }
 
-func InterfaceToInt64(val interface{}) (int64, error) {
+func ToInt64(val interface{}) (int64, error) {
+	if val == nil {
+		return 0, errors.New("nil value")
+	}
+
 	switch v := val.(type) {
 	case int64:
 		return v, nil
@@ -103,11 +108,33 @@ func InterfaceToInt64(val interface{}) (int64, error) {
 			return 0, errors.New("value too large for int64")
 		}
 		return int64(v), nil
-	case int, int8, int16, int32:
-		return reflect.ValueOf(val).Int(), nil
-	case uint, uint8, uint16, uint32:
-		return int64(reflect.ValueOf(val).Uint()), nil
+	case int32:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case int:
+		return int64(v), nil
+	case uint:
+		return int64(v), nil
+	case float64:
+		if v > math.MaxInt64 || v < math.MinInt64 {
+			return 0, errors.New("value out of int64 range")
+		}
+		return int64(v), nil
+	case string:
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("failed to parse string as int64: %v", err)
+		}
+		return n, nil
 	default:
-		return 0, fmt.Errorf("unsupported type: %T", val)
+		return 0, fmt.Errorf("unsupported type for int64: %T", val)
 	}
+}
+
+func ToString(val interface{}) string {
+	if s, ok := val.(string); ok {
+		return s
+	}
+	return fmt.Sprintf("%v", val)
 }

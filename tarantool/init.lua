@@ -1,4 +1,3 @@
--- Базовая конфигурация
 box.cfg{
     listen = '0.0.0.0:3301',
     wal_mode = 'write',
@@ -6,7 +5,6 @@ box.cfg{
     log_level = 5
 }
 
--- Ждем готовности Tarantool (альтернатива для версии 2.10)
 local function wait_ready()
     local attempts = 0
     while attempts < 20 do
@@ -24,20 +22,16 @@ if not wait_ready() then
     os.exit(1)
 end
 
--- Конфигурация
 local USERNAME = os.getenv('TARANTOOL_USER_NAME')
 local PASSWORD = os.getenv('TARANTOOL_USER_PASSWORD')
 
--- 1. Создаем пространство polls
 print("Creating space 'polls'...")
 local ok, err = pcall(function()
     if box.space.polls == nil then
-        -- Создаем sequence для автоинкремента ID
         box.schema.sequence.create('polls_id', {
             if_not_exists = true
         })
 
-        -- Создаем пространство polls с правильным форматом
         box.schema.space.create('polls', {
             if_not_exists = true,
             format = {
@@ -53,7 +47,6 @@ local ok, err = pcall(function()
             }
         })
 
-        -- Создаем первичный индекс с sequence
         box.space.polls:create_index('primary', {
             type = 'tree',
             parts = {'id'},
@@ -71,7 +64,6 @@ if not ok then
     os.exit(1)
 end
 
--- 2. Настройка пользователя
 print("Configuring user...")
 ok, err = pcall(function()
     if not box.schema.user.exists(USERNAME) then
@@ -86,7 +78,6 @@ if not ok then
     os.exit(1)
 end
 
--- 3. Healthcheck функция
 rawset(_G, 'healthcheck', function()
     return {
         status = box.space.polls ~= nil and 'OK' or 'FAIL',
@@ -94,7 +85,6 @@ rawset(_G, 'healthcheck', function()
     }
 end)
 local function setup_functions()
-    -- Удаление опроса
     box.schema.func.create('delete_poll', {
         if_not_exists = true,
         body = [[function(poll_id, user_id)
@@ -106,7 +96,6 @@ local function setup_functions()
         end]]
     })
 
-    -- Получение результатов
     box.schema.func.create('get_poll_results', {
         if_not_exists = true,
         body = [[function(poll_id)
@@ -126,7 +115,6 @@ local function setup_functions()
         end]]
     })
 
-    -- Досрочное завершение
     box.schema.func.create('complete_poll_early', {
         if_not_exists = true,
         body = [[function(poll_id, user_id)
@@ -152,7 +140,6 @@ local function setup_functions()
         end]]
     })
 
-    -- Создание голоса
     box.schema.func.create('create_vote', {
         if_not_exists = true,
         body = [[function(poll_id, option, user_id_str)
@@ -196,13 +183,12 @@ local function setup_functions()
     return true
 end
 print("Setting up functions...")
-ok, err = pcall(setup_functions)  -- Вот этот вызов!
+ok, err = pcall(setup_functions)
 if not ok then
     print("ERROR setting up functions: "..tostring(err))
     os.exit(1)
 end
 
--- Даем права на выполнение функций
 box.schema.user.grant(USERNAME, 'execute', 'function', 'delete_poll')
 box.schema.user.grant(USERNAME, 'execute', 'function', 'get_poll_results')
 box.schema.user.grant(USERNAME, 'execute', 'function', 'complete_poll_early')

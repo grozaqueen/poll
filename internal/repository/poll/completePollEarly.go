@@ -1,46 +1,34 @@
 package poll
 
 import (
-	"errors"
-	"fmt"
 	"github.com/grozaqueen/poll/errs"
+	"github.com/grozaqueen/poll/internal/utils"
+	"log/slog"
 	"time"
 )
 
 func (pr *PollRepository) CompletePollEarly(pollID uint64, userID uint64) (time.Time, error) {
-	resp, err := pr.Call("complete_poll_early", []interface{}{pollID, userID})
+	const context = "CompletePollEarly"
+
+	resp, err := pr.tarantoolUtils.ProcessCall(pr.Conn, "complete_poll_early", []interface{}{pollID, userID}, context)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("tarantool call failed: %v", err)
+		return time.Time{}, err
 	}
 
-	if len(resp) == 0 {
-		return time.Time{}, errors.New("empty response from Tarantool")
-	}
-
-	result, ok := resp[0].(map[interface{}]interface{})
-	if !ok {
-		return time.Time{}, errors.New("invalid response format")
-	}
-
-	// Обработка ошибок
-	if errMsg, exists := result["error"]; exists {
-		if errStr, ok := errMsg.(string); ok {
-			switch errStr {
-			case "PollNotFound":
-				return time.Time{}, errs.PollNotFound
-			case "UserNotCreator":
-				return time.Time{}, errs.UserNotCreator
-			default:
-				return time.Time{}, errors.New(errStr)
-			}
-		}
-		return time.Time{}, errors.New("unknown error format")
-	}
-
-	// Получаем новую дату окончания
-	endDateUnix, err := toInt64(result["end_date"])
+	result, err := pr.tarantoolUtils.ExtractMap(resp, context)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid end_date format: %v", err)
+		return time.Time{}, err
+	}
+
+	if err := pr.tarantoolUtils.HandleTarantoolError(result, context); err != nil {
+		return time.Time{}, err
+	}
+
+	endDateUnix, err := utils.ToInt64(result["end_date"])
+	if err != nil {
+		pr.log.Error(context+": некорректная дата окончания",
+			slog.String("error", err.Error()))
+		return time.Time{}, errs.InvalidResponseFromTarantool
 	}
 
 	return time.Unix(endDateUnix, 0), nil

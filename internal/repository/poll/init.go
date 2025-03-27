@@ -2,15 +2,25 @@ package poll
 
 import (
 	"github.com/tarantool/go-tarantool/v2"
+	"log/slog"
 )
 
+type tarantoolUtils interface {
+	ProcessCall(conn *tarantool.Connection, fnName string, args []interface{}, context string) ([]interface{}, error)
+	ExtractMap(resp []interface{}, context string) (map[interface{}]interface{}, error)
+	HandleTarantoolError(result map[interface{}]interface{}, context string) error
+}
 type PollRepository struct {
-	Conn *tarantool.Connection
+	Conn           *tarantool.Connection
+	tarantoolUtils tarantoolUtils
+	log            *slog.Logger
 }
 
-func NewPollRepository(conn *tarantool.Connection) *PollRepository {
+func NewPollRepository(conn *tarantool.Connection, tarantoolUtils tarantoolUtils, log *slog.Logger) *PollRepository {
 	return &PollRepository{
-		Conn: conn,
+		Conn:           conn,
+		tarantoolUtils: tarantoolUtils,
+		log:            log,
 	}
 }
 

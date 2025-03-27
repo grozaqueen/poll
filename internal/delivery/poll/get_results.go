@@ -1,34 +1,22 @@
 package poll
 
 import (
-	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
 func (pd *PollDelivery) GetResults(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+	if !pd.utils.ValidateMethod(w, r, http.MethodGet) {
 		return
 	}
 
-	pollIDStr := r.URL.Query().Get("id")
-	if pollIDStr == "" {
-		http.Error(w, "Не указан ID опроса", http.StatusBadRequest)
-		return
-	}
-
-	// Конвертируем строку в uint64
-	pollID, err := strconv.ParseUint(pollIDStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Некорректный ID опроса", http.StatusBadRequest)
+	pollID, ok := pd.utils.ParseUintParam(w, r, r.URL.Query().Get("id"))
+	if !ok {
 		return
 	}
 
 	poll, err := pd.PollRepository.GetResults(pollID)
 	if err != nil {
-		err, statusCode := pd.errResolver.Get(err)
-		http.Error(w, err.Error(), statusCode)
+		pd.utils.HandleError(w, r, err, "GetResults: ошибка получения результатов")
 		return
 	}
 
@@ -38,6 +26,5 @@ func (pd *PollDelivery) GetResults(w http.ResponseWriter, r *http.Request) {
 		Votes:    poll.Votes,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	pd.utils.SendJSONResponse(w, http.StatusOK, response)
 }

@@ -1,35 +1,32 @@
 package poll
 
 import (
-	"encoding/json"
 	"github.com/grozaqueen/poll/internal/utils"
 	"net/http"
 )
 
 func (pd *PollDelivery) CreatePoll(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+	if !pd.utils.ValidateMethod(w, r, http.MethodPost) {
 		return
 	}
 
 	var req CreatePollRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Неверный JSON", http.StatusBadRequest)
+	if !pd.utils.DecodeRequest(w, r, &req) {
 		return
 	}
 
 	endDate, err := utils.ParseSimpleDate(req.EndDate)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		pd.utils.HandleError(w, r, err, "CreatePoll: ошибка формата даты")
 		return
 	}
 
 	poll, err := pd.PollUsecase.CreatePoll(req.toModel(endDate))
 	if err != nil {
-		err, statusCode := pd.errResolver.Get(err)
-		http.Error(w, err.Error(), statusCode)
+		pd.utils.HandleError(w, r, err, "CreatePoll: ошибка создания опроса")
 		return
 	}
+
 	response := CreatePollResponse{
 		PollID:   poll.ID,
 		Options:  poll.Options,
@@ -37,9 +34,5 @@ func (pd *PollDelivery) CreatePoll(w http.ResponseWriter, r *http.Request) {
 		UserName: poll.Creator.Name,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
+	pd.utils.SendJSONResponse(w, http.StatusCreated, response)
 }

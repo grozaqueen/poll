@@ -14,6 +14,7 @@ type GetErrorCode interface {
 
 var (
 	InvalidJSONFormat   = errors.New("Неверный формат JSON")
+	InvalidReqFormat    = errors.New("Неверный формат запроса")
 	InternalServerError = errors.New("Внутренняя ошибка сервера")
 	FailedToParseConfig = errors.New("Ошибка парсинга конфигурации")
 	MethodNotAllowed    = errors.New("Метод не поддерживается")
@@ -33,6 +34,8 @@ var (
 	UnauthorizedAccess = errors.New("Недостаточно прав")
 	UserNotCreator     = errors.New("Только создатель может выполнить это действие")
 	UserNotFound       = errors.New("Пользователь не найден")
+
+	InvalidResponseFromTarantool = errors.New("Некорректный ответ из тарантула")
 )
 
 type ErrorStore struct {
@@ -57,6 +60,7 @@ func NewErrorStore() *ErrorStore {
 		mux: sync.RWMutex{},
 		errorCodes: map[error]int{
 			InvalidJSONFormat:   http.StatusBadRequest,
+			InvalidReqFormat:    http.StatusBadRequest,
 			InternalServerError: http.StatusInternalServerError,
 			FailedToParseConfig: http.StatusInternalServerError,
 			MethodNotAllowed:    http.StatusMethodNotAllowed,
@@ -76,6 +80,8 @@ func NewErrorStore() *ErrorStore {
 			UnauthorizedAccess: http.StatusUnauthorized,
 			UserNotCreator:     http.StatusForbidden,
 			UserNotFound:       http.StatusNotFound,
+
+			InvalidResponseFromTarantool: http.StatusInternalServerError,
 		},
 	}
 }
