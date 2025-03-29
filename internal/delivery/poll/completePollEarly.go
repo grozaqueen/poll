@@ -4,8 +4,10 @@ import (
 	"net/http"
 )
 
+const formatDate = "02.01.2006 15:04:05 MST"
+
 func (pd *PollDelivery) CompletePollEarly(w http.ResponseWriter, r *http.Request) {
-	if !pd.utils.ValidateMethod(w, r, http.MethodPost) {
+	if !pd.utils.ValidateMethod(w, r, http.MethodPatch) {
 		return
 	}
 
@@ -22,7 +24,7 @@ func (pd *PollDelivery) CompletePollEarly(w http.ResponseWriter, r *http.Request
 
 	response := CompletePollResponse{
 		Status:  "Голосование завершено досрочно",
-		EndDate: endDate.Format("02.01.2006 15:04:05 MST"),
+		EndDate: endDate.Format(formatDate),
 		PollID:  req.PollID,
 	}
 

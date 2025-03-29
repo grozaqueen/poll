@@ -38,7 +38,7 @@ func (s *Server) SetupRoutes() {
 	s.router.HandleFunc("/poll", s.polls.CreatePoll).Methods("POST")
 	s.router.HandleFunc("/vote", s.votes.CreateVote).Methods("POST")
 	s.router.HandleFunc("/results", s.polls.GetResults).Methods("GET")
-	s.router.HandleFunc("/poll/complete", s.polls.CompletePollEarly).Methods("POST")
+	s.router.HandleFunc("/poll/complete", s.polls.CompletePollEarly).Methods("PATCH")
 	s.router.HandleFunc("/poll/delete", s.polls.DeletePoll).Methods("DELETE")
 }
 
