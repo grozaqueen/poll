@@ -1,0 +1,272 @@
+basePath: /
+definitions:
+  poll.CompletePollRequest:
+    properties:
+      poll_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  poll.CompletePollResponse:
+    properties:
+      end_date:
+        type: string
+      poll_id:
+        type: integer
+      status:
+        type: string
+    type: object
+  poll.CreatePollRequest:
+    properties:
+      end_date:
+        type: string
+      options:
+        items:
+          type: string
+        type: array
+      question:
+        type: string
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  poll.CreatePollResponse:
+    properties:
+      options:
+        items:
+          type: string
+        type: array
+      poll_id:
+        type: integer
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  poll.DeletePollRequest:
+    properties:
+      poll_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  poll.DeletePollResponse:
+    properties:
+      deleted_by:
+        type: string
+      poll_id:
+        type: integer
+      status:
+        type: string
+    type: object
+  poll.ResultsPollResponse:
+    properties:
+      options:
+        items:
+          type: string
+        type: array
+      question:
+        type: string
+      votes:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  vote.CreateVoteRequest:
+    properties:
+      option:
+        type: string
+      poll_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API системы опросов и голосований
+  title: Poll API
+  version: "1.0"
+paths:
+  /poll:
+    post:
+      consumes:
+      - application/json
+      description: Создает новый опрос с указанными параметрами
+      parameters:
+      - description: Данные для создания опроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/poll.CreatePollRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/poll.CreatePollResponse'
+        "400":
+          description: Неверный формат JSON
+          schema:
+            type: string
+        "500":
+          description: Ошибка сервера
+          schema:
+            type: string
+      summary: Создать новый опрос
+      tags:
+      - Polls
+  /poll/complete:
+    patch:
+      consumes:
+      - application/json
+      description: Позволяет создателю завершить опрос до установленного срока окончания
+      parameters:
+      - description: Данные для досрочного завершения опроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/poll.CompletePollRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Опрос успешно завершен
+          schema:
+            $ref: '#/definitions/poll.CompletePollResponse'
+        "400":
+          description: Неверный формат JSON
+          schema:
+            type: string
+        "403":
+          description: Только создатель может выполнить это действие
+          schema:
+            type: string
+        "404":
+          description: Опрос не найден
+          schema:
+            type: string
+        "500":
+          description: Ошибка сервера
+          schema:
+            type: string
+      summary: Завершить опрос досрочно
+      tags:
+      - Polls
+  /poll/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет существующий опрос (доступно только создателю опроса)
+      parameters:
+      - description: Данные для удаления опроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/poll.DeletePollRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Опрос успешно удален
+          schema:
+            $ref: '#/definitions/poll.DeletePollResponse'
+        "400":
+          description: Неверный формат JSON
+          schema:
+            type: string
+        "403":
+          description: Только создатель может выполнить это действие
+          schema:
+            type: string
+        "404":
+          description: Опрос не найден
+          schema:
+            type: string
+        "500":
+          description: Ошибка сервера
+          schema:
+            type: string
+      summary: Удалить опрос
+      tags:
+      - Polls
+  /results:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает текущие результаты голосования по указанному опросу
+      parameters:
+      - description: ID опроса
+        example: 123
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный запрос
+          schema:
+            $ref: '#/definitions/poll.ResultsPollResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            type: string
+        "404":
+          description: Опрос не найден
+          schema:
+            type: string
+        "500":
+          description: Ошибка сервера
+          schema:
+            type: string
+      summary: Получить результаты опроса
+      tags:
+      - Polls
+  /vote:
+    post:
+      consumes:
+      - application/json
+      description: Записывает голос пользователя в указанном опросе
+      parameters:
+      - description: Данные голоса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/vote.CreateVoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Голос успешно учтен
+          schema:
+            type: string
+        "400":
+          description: Неверный формат запроса
+          schema:
+            type: string
+        "403":
+          description: Вы уже голосовали в этом опросе
+          schema:
+            type: string
+        "404":
+          description: Опрос не найден
+          schema:
+            type: string
+        "500":
+          description: Ошибка сервера
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Создать голос
+      tags:
+      - Votes
+swagger: "2.0"

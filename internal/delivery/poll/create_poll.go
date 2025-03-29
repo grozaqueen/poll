@@ -5,6 +5,17 @@ import (
 	"net/http"
 )
 
+// CreatePoll godoc
+// @Summary Создать новый опрос
+// @Description Создает новый опрос с указанными параметрами
+// @Tags Polls
+// @Accept json
+// @Produce json
+// @Param input body CreatePollRequest true "Данные для создания опроса"
+// @Success 201 {object} CreatePollResponse
+// @Failure 400 {object} string "Неверный формат JSON"
+// @Failure 500 {object} string "Ошибка сервера"
+// @Router /poll [post]
 func (pd *PollDelivery) CreatePoll(w http.ResponseWriter, r *http.Request) {
 	if !pd.utils.ValidateMethod(w, r, http.MethodPost) {
 		return

@@ -85,8 +85,3 @@ func NewErrorStore() *ErrorStore {
 		},
 	}
 }
-
-type HTTPErrorResponse struct {
-	ErrorMessage string `json:"error_message"`
-	ErrorCode    int    `json:"error_code,omitempty"`
-}

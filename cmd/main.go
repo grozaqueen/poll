@@ -1,10 +1,12 @@
+// @title Poll API
+// @version 1.0
+// @description API системы опросов и голосований
+// @host localhost:8080
+// @BasePath /
 package main
 
 import (
-	_ "github.com/tarantool/go-tarantool/v2/datetime"
-	_ "github.com/tarantool/go-tarantool/v2/decimal"
-	_ "github.com/tarantool/go-tarantool/v2/uuid"
-
+	_ "github.com/grozaqueen/poll/docs"
 	"log"
 	"net/http"
 )
